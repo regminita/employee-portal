@@ -1,0 +1,80 @@
+import { Injectable } from '@angular/core';
+import { HttpRequest, HttpResponse, HttpHandler, HttpEvent, HttpInterceptor, HTTP_INTERCEPTORS } from '@angular/common/http';
+import { Observable, of, throwError } from 'rxjs';
+import { delay, mergeMap, materialize, dematerialize } from 'rxjs/operators';
+
+@Injectable()
+export class FakeBackendInterceptor implements HttpInterceptor {
+
+    constructor() { }
+
+    intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
+        // array in local storage for registered users
+        let users: any[] = JSON.parse(localStorage.getItem('users')) || [];
+
+        // wrap in delayed observable to simulate server api call
+        return of(null).pipe(mergeMap(() => {
+
+            // authenticate
+            if (request.url.endsWith('/users/authenticate') && request.method === 'POST') {
+                // find if any user matches login credentials
+               /* let filteredUsers = users.filter(user => {
+                    return user.username === request.body.username && user.password === request.body.password;
+                });*/
+
+                if (request.body.username === 'Nita'  && request.body.password === 'pass') {
+                    // if login details are valid return 200 OK with user details and fake jwt token
+                    let body = {
+                        token: 'fake-jwt-token',
+                    };
+
+                    return of(new HttpResponse({ status: 200, body: body }));
+                } else {
+                    let body = {
+                        token: null,
+                    }
+                    // else return 400 bad request
+                    return of(new HttpResponse({ status: 200, body: body }));                }
+            }
+
+            // get users
+            if (request.url.endsWith('/employees') && request.method === 'GET') {
+                // check for fake auth token in header and return users if valid, this security is implemented server side in a real application
+                if (request.headers.get('Authorization') === 'Bearer fake-jwt-token') {
+                   let employees = [
+                       { id: 1, first_name:'John', last_name: 'Doe', 'salary': 10000, 
+                       'joining_date':'2019-01-01', 'department':'Accounts'},
+                       { id: 2, first_name:'Joe', last_name: 'Doe', 'salary': 10000, 
+                       'joining_date':'2019-01-02', 'department':'Marketing'},
+                       { id: 3, first_name:'Ryan', last_name: 'Doe', 'salary': 10000, 
+                       'joining_date':'2019-01-03', 'department':'Operations'},
+                       { id: 4, first_name:'Rosh', last_name: 'Doe', 'salary': 10000, 
+                       'joining_date':'2019-01-04', 'department':'IT'},
+                       { id: 5, first_name:'Regar', last_name: 'Doe', 'salary': 10000, 
+                       'joining_date':'2019-01-05', 'department':'Sales'}];
+                    return of(new HttpResponse({ status: 200, body: employees }));
+                } else {
+                    // return 401 not authorised if token is null or invalid
+                    return throwError({ error: { message: 'Unauthorised' } });
+                }
+            }
+
+
+            // pass through any requests not handled above
+            return next.handle(request);
+            
+        }))
+
+        // call materialize and dematerialize to ensure delay even if an error is thrown (https://github.com/Reactive-Extensions/RxJS/issues/648)
+        .pipe(materialize())
+        .pipe(delay(500))
+        .pipe(dematerialize());
+    }
+}
+
+export let fakeBackendProvider = {
+    // use fake backend in place of Http service for backend-less development
+    provide: HTTP_INTERCEPTORS,
+    useClass: FakeBackendInterceptor,
+    multi: true
+};

@@ -1,0 +1,10 @@
+/* You can add global styles to this file, and also import other style files */
+@import "~bootstrap/dist/css/bootstrap.css";
+
+app-header{
+    .navbar {
+        background: #1abc9c; 
+        border: #1abc9c;
+        margin-bottom: 10px;
+    }
+}

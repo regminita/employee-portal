@@ -1,0 +1,14 @@
+<div class="navbar navbar-static-top">
+  <div class="d-inline-flex justify-content">
+    <div class ="p-3 font-weight-bold align-content-center">Employee Portal</div>
+    <div class="p-3">
+        <div class="p-2 rounded bg-dark"><a href="/employees" class="text-white">Employees</a></div>
+     </div>
+    <div class="p-3 pull-right">
+      <div class="p-2 rounded bg-dark"><a *ngIf= "!token" href="/login" class="text-white">Login </a>
+        <a *ngIf= "token" href="/logout" class="text-white">Logout</a>
+      </div>
+    </div>
+      
+  </div>
+</div>
